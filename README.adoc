@@ -1,0 +1,42 @@
+= passenv
+
+A shell command, like `env`, to run a program in an environment modified by values read from standard input.
+
+== Motivation
+
+The immediate problem `passenv` intends to solve is the sharing of _secrets_ between shell programs, notably those encrypted by and accessible via the password store https://www.passwordstore.org/[`pass`].
+
+However, `passenv` is applicable to any situation where values one might set in a program environment via `env` are most conveniently read from standard input.
+
+For example, the values stored in `pass` might be organized and accessible in the following manner:
+
+    $ pass show db/admin
+    p@ssw0r!d
+    Username: db_admin
+
+With `pass`, we can store the password in the system clipboard -- (with a timeout) -- and apply it where we need it. ...Or we can store these secrets in our `tmux` buffer. _...Etc., etc._
+
+But for programs which are able to read these secrets from their environment, this is a far more efficient, more reliable, and reasonably secure interface for doing so:
+
+    $ pass show db/admin | passenv PGPASSWORD PGUSER psql -h myserver mydb
+    mydb=>
+
+(Moreover, say for a script which invokes `psql` multiple times, this is far superior to entering the password multiple times -- particularly so as it might be cleared from your clipboard for security.)
+
+== Installation
+
+`passenv` requires Python.
+
+You'll likely want to install it to a directory on your `PATH`, such as `~/.local/bin/`.
+
+== Use
+
+Please refer to `passenv --help`.
+
+`passenv` intends to largely duplicate the interface of `env`.
+
+Note that values read from standard input which conform to the pattern in the example above, namely --
+
+    Name: value
+
+-- are trimmed to remove the label ``Name: ``. The environment name intended for this value must be defined per invocation.
