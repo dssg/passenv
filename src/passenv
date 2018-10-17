@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import subprocess
+import sys
+
+
+# TODO: perhaps allow disabling stdin=tty with flag --no-tty
+
+# FIXME: requires console `reset`? ...only under certain circumstances?
+
+TTY_PATH = '/dev/tty'
+
+
+def main(value_lines, value_names, command, ignore_env):
+    env = {
+        name: line.rstrip('\r\n').split(': ', 1)[-1]
+        for (name, line) in zip(value_names, value_lines)
+    }
+
+    if not ignore_env:
+        env = dict(os.environ, **env)
+
+    with open(TTY_PATH) as tty:
+        proc = subprocess.Popen(
+            command,
+            env=env,
+            stdin=tty,
+        )
+        proc.wait()
+
+    return proc
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="run a program in an environment modified by values "
+                    "provided by standard input",
+    )
+    parser.add_argument(
+        '-', '-i', '--ignore-environment',
+        action='store_true',
+        help='start with an empty environment',
+    )
+    parser.add_argument(
+        'names',
+        metavar='name',
+        nargs='+',
+        help="name(s) to apply to value(s) in order",
+    )
+    parser.add_argument(
+        'command',
+        help="command to run",
+    )
+    parser.add_argument(
+        'command_args',
+        metavar='...',
+        nargs=argparse.REMAINDER,
+        help="optional command arguments",
+    )
+    args = parser.parse_args()
+    command = [args.command] + args.command_args
+    proc = main(
+        sys.stdin,
+        args.names,
+        command,
+        args.ignore_environment,
+    )
+    sys.exit(proc.returncode)
